@@ -1,17 +1,16 @@
 import os
 import logging
 import requests
-from datetime import datetime
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
 # إعداد السجلات لتتبع الأخطاء في منصة ريلواي
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
-# قراءة التوكن تلقائياً من خانة الـ Variables في ريلواي عبر نظام التشغيل
+# قراءة التوكن تلقائياً من خانة الـ Variables في ريلواي
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
-# قائمة الولايات (ولاية حضرموت + 20 ولاية جزائرية) لربطها بـ API المواقيت
+# قائمة الولايات (ولاية حضرموت + 20 ولاية جزائرية)
 LOCATIONS = {
     "ولاية حضرموت": {"city": "Hadramaut", "country": "Yemen"},
     "ولاية الجزائر": {"city": "Algiers", "country": "Algeria"},
@@ -49,7 +48,7 @@ ISLAMIC_EVENTS = {
     "12-10": "عيد الأضحى المبارك.",
 }
 
-# الأزرار المتواجدة داخل حقل الكتابة لتسهيل الاستخدام من الهاتف
+# الأزرار المتواجدة داخل حقل الكتابة
 def get_main_keyboard():
     keyboard = [
         ["🕌 مواقيت الصلاة", "📆 التقويم الهجري"],
@@ -66,7 +65,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     await update.message.reply_text(welcome_text, reply_markup=get_main_keyboard())
 
-# دالة جلب البيانات الإسلامية والمواقيت من API Aladhan
+# دالة جلب البيانات الإسلامية والمواقيت من API
 def get_islamic_data(city, country):
     try:
         url = f"https://aladhan.com{city}&country={country}&method=1"
@@ -136,14 +135,18 @@ async def handle_messages(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # الدالة التشغيلية الرئيسية
 def main():
     if not BOT_TOKEN:
-        print("خطأ فادح: لم يتم العثور على BOT_TOKEN في متغيرات البيئة بـ Railway!")
+        print("خطأ: لم يتم العثور على BOT_TOKEN في متغيرات البيئة!")
         return
         
-    app = Application.builder().token(BOT_TOKEN).build()
+    # قمنا بإلغاي تعارض الـ job_queue المسبب للمشكلة
+    app = Application.builder().token(BOT_TOKEN).job_queue(None).build()
+    
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_messages))
-    print("البوت يعمل الآن بنجاح على السيرفر السحابي...")
+    
+    print("البوت يقلع الآن بنجاح...")
     app.run_polling()
 
 if __name__ == '__main__':
     main()
+            
